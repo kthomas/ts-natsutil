@@ -27,11 +27,11 @@ class NatsUtil {
     this.token = token ? token : this.config.natsToken
   }
 
-  getNatsConnectionOpts(clientId: string): nats.NatsConnectionOptions {
+  getNatsConnectionOpts(clientId?: string): nats.NatsConnectionOptions {
     return {
       encoding: this.config.natsEncoding,
       json: this.config.natsJson,
-      name: clientId,
+      name: clientId || `${this.config.natsClientPrefix}-${uuidv4()}`,
       reconnect: true,
       maxPingOut: this.config.natsMaxPingOut,
       maxReconnectAttempts: -1, // reconnect dammit! (see reconnectTimeWait when it's time to make this a bit more intelligent)
@@ -47,12 +47,28 @@ class NatsUtil {
     } as nats.NatsConnectionOptions
   }
 
-  async getNatsConnection(): Promise<nats.Client> {
+  getNatsStreamingClientOpts(natsConnectionOpts: nats.NatsConnectionOptions, natsClient: nats.Client): stan.ClientOpts {
+    const opts = natsConnectionOpts as stan.StanOptions;
+    return {
+      // url?: string,
+      // connectTimeout?: number,
+      // ackTimeout?: number,
+      // discoverPrefix?: string,
+      // maxPubAcksInflight?: number,
+      // stanEncoding?: string,
+      // stanMaxPingOut?: number,
+      // stanPingInterval: number,
+      nc: natsClient,
+    } as stan.ClientOpts
+  }
+
+  async getNatsConnection(opts?: nats.NatsConnectionOptions): Promise<nats.Client> {
     let client: nats.Client
-    const clientId = `${this.config.natsClientPrefix}-${uuidv4()}`
+    const clientId = opts ? opts.name : `${this.config.natsClientPrefix}-${uuidv4()}`
     try {
-      var opts = this.getNatsConnectionOpts(clientId) as stan.StanOptions
-      // TODO: merge StanOptions into opts
+      if (!opts) {
+        opts = this.getNatsConnectionOpts(clientId)
+      }
       client = await nats.connect(opts) as nats.Client
       client.on('connect', function() {
 
@@ -72,10 +88,14 @@ class NatsUtil {
   }
 
   async getNatsStreamingConnection(): Promise<stan.Stan> {
-    var client: stan.Stan | undefined
-    const clientId = `${this.config.natsClientPrefix}-${uuidv4()}-${this.clusterId}-${uuidv4()}`
+    let client: stan.Stan | undefined
+    let clientId: string
+    // const clientId = `${this.config.natsClientPrefix}-${uuidv4()}-${this.clusterId}-${uuidv4()}`
     try {
-      const opts = this.getNatsConnectionOpts(clientId)
+      const natsConnectionOpts = this.getNatsConnectionOpts()
+      const natsClient = await this.getNatsConnection()
+      const opts = this.getNatsStreamingClientOpts(natsConnectionOpts, natsClient)
+      clientId = opts.name
       client = await stan.connect(this.clusterId, clientId, opts)
       return client
     } catch (err) {
