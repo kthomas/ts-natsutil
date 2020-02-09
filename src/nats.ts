@@ -1,3 +1,4 @@
+import * as natsws from '@provide/nats.ws/src/nats' // FIXME
 import * as nats from 'ts-nats'
 import * as stan from 'node-nats-streaming'
 // import { Client as NATSClient } from 'nats'
@@ -27,7 +28,7 @@ class NatsUtil {
     this.token = token ? token : this.config.natsToken
   }
 
-  getNatsConnectionOpts(clientId?: string): nats.NatsConnectionOptions {
+  getNatsConnectionOpts(clientId?: string): any {
     return {
       encoding: this.config.natsEncoding,
       json: this.config.natsJson,
@@ -44,7 +45,8 @@ class NatsUtil {
       userJWT: this.bearerToken,
       pedantic: this.config.natsPedantic,
       verbose: this.config.natsVerbose,
-    } as nats.NatsConnectionOptions
+      url: this.servers[0],
+    }
   }
 
   getNatsStreamingClientOpts(natsConnectionOpts: nats.NatsConnectionOptions, natsClient: nats.Client): stan.ClientOpts {
@@ -63,32 +65,32 @@ class NatsUtil {
   }
 
   async getNatsConnection(opts?: nats.NatsConnectionOptions): Promise<nats.Client> {
-    let client: nats.Client
     const clientId = opts ? opts.name : `${this.config.natsClientPrefix}-${uuidv4()}`
     try {
       if (!opts) {
-        opts = this.getNatsConnectionOpts(clientId)
+        opts = this.getNatsConnectionOpts(clientId) as nats.NatsConnectionOptions
       }
-      client = await nats.connect(opts) as nats.Client
-      client.on('connect', function() {
-
-        client.on('close', function(err: any) {
-          console.log(`NATS connection ${clientId} closed; ${err}"`)
-        })
-
-        client.on('error', function(err: any) {
-          console.log(`Error on NATS connection: ${clientId}; ${err}"`)
-        })
-      })
-      return client
+      return nats.connect(opts)
     } catch (err) {
       console.log(`Error establishing NATS connection: ${clientId}; ${err}"`)
+      return Promise.reject(err)
     }
-    throw 'failed to get NATS connection'
+  }
+
+  async getNatsWebsocketConnection(opts?: natsws.NatsConnectionOptions): Promise<natsws.NatsConnection> {
+    const clientId = opts ? opts.name : `${this.config.natsClientPrefix}-${uuidv4()}`
+    try {
+      if (!opts) {
+        opts = this.getNatsConnectionOpts(clientId) as natsws.NatsConnectionOptions
+      }
+      return natsws.connect(opts)
+    } catch (err) {
+      console.log(`Error establishing NATS connection: ${clientId}; ${err}"`)
+      return Promise.reject(err)
+    }
   }
 
   async getNatsStreamingConnection(): Promise<stan.Stan> {
-    let client: stan.Stan | undefined
     let clientId: string
     // const clientId = `${this.config.natsClientPrefix}-${uuidv4()}-${this.clusterId}-${uuidv4()}`
     try {
@@ -96,12 +98,11 @@ class NatsUtil {
       const natsClient = await this.getNatsConnection()
       const opts = this.getNatsStreamingClientOpts(natsConnectionOpts, natsClient)
       clientId = opts.name
-      client = await stan.connect(this.clusterId, clientId, opts)
-      return client
+      return stan.connect(this.clusterId, clientId, opts)
     } catch (err) {
       console.log(`Error establishing NATS streaming connection: ${clientId}; ${err}"`)
+      return Promise.reject(err)
     }
-    throw 'failed to get NATS streaming connection'
   }
 
   async attemptNack(conn: stan.Stan, msg: NATSMessage, timeout: number) {

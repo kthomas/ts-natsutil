@@ -3,7 +3,7 @@ const generateRSAKeypair = require('generate-rsa-keypair')
 
 import NatsUtil from "./nats";
 
-const natsServers = ['nats://localhost:4220']
+const natsServers = ['ws://localhost:4219']
 
 const validSigningKey = `-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAqU/GXp8MqmugQyRk5FUFBvlJt1/h7L3Crzlzejz/OxriZdq/
@@ -69,7 +69,7 @@ const vendRSAKeypair = (): any => {
 
 test('when the bearer token is not present', async () => {
   let client = new NatsUtil(null, natsServers)
-  const conn = await client.getNatsConnection()
+  const conn = await client.getNatsWebsocketConnection()
   expect(conn.isClosed()).toBeTruthy()
 })
 
@@ -77,15 +77,15 @@ test('when the bearer token is present but signed by the wrong authority', async
   let signer = vendRSAKeypair()
   let token = vendJWT(10, [], signer.private)
   let client = new NatsUtil(null, natsServers, token)
-  const conn = await client.getNatsConnection()
-  expect(conn.publish('test', 'msg123')).toBeFalsy()
+  const conn = await client.getNatsWebsocketConnection()
+  expect(conn.isClosed()).toBeTruthy()
 })
 
 test('when the bearer token is present and signed by the appropriate authority', async () => {
   let token = vendJWT(10, {publish: {'allow': ['auth.>']}, subscribe: {}, responses: {}}, validSigningKey)
   let client = new NatsUtil(null, natsServers, token)
-  const conn = await client.getNatsConnection()
-  expect(conn.publish('test', 'msg123')).toBeTruthy()
+  const conn = await client.getNatsWebsocketConnection()
+  expect(conn.isClosed()).toBeFalsy()
 })
 
 // test('when the bearer token authorizes a specific response permission', async () => {
