@@ -18,7 +18,7 @@
   },
   "author": "Kyle Thomas <kyle@provide.services>",
   "dependencies": {
-    "@provide/nats.ws": "^0.0.8",
+    "@provide/nats.ws": "0.0.2",
     "nats.ws": "^1.0.0-1",
     "node-nats-streaming": "^0.2.6",
     "ts-nats": "^1.2.4",

@@ -1,4 +1,4 @@
-import * as natsws from '@provide/nats.ws/src/nats'
+import * as natsws from '@provide/nats.ws'
 import * as nats from 'ts-nats'
 import * as stan from 'node-nats-streaming'
 import { Config } from './env'
