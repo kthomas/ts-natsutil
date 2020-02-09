@@ -10,7 +10,7 @@
   "author": "Kyle Thomas <kyle@provide.services>",
   "license": "MIT",
   "dependencies": {
-    "@provide/nats.ws": "^0.0.1",
+    "@provide/nats.ws": "^0.0.2",
     "node-nats-streaming": "^0.2.6",
     "ts-nats": "^1.2.4",
     "uuid": "^3.3.2"

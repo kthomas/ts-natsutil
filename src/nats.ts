@@ -1,16 +1,59 @@
-import * as natsws from '@provide/nats.ws/src/nats' // FIXME
+import * as natsws from '@provide/nats.ws' // FIXME
 import * as nats from 'ts-nats'
 import * as stan from 'node-nats-streaming'
-// import { Client as NATSClient } from 'nats'
-// import { Stan as NATSStreamingClient } from 'node-nats-streaming'
-
-import { default as Config } from './env'
-
-// export type NATSClient = nats.Client
-// export type NATSStreamingClient = stan.Stan
-export type NATSMessage = stan.Message
+import { TlsOptions } from 'tls'
 
 const uuidv4 = require('uuid/v4')
+
+class Config {
+
+  static camelize(str: string, sep: string): string {
+    const split = str.split(sep)
+
+    return split.reduce((acc: string, curr: string, i) => {
+      if (i === 0) {
+        return curr.toLowerCase()
+      }
+
+      return (acc + curr.charAt(0).toUpperCase() + curr.slice(1).toLowerCase())
+    }, '')
+  }
+
+  static fromEnv(overrides?: Partial<Config>): Config {
+    const instance = new Config();
+    for (const [k, v] of Object.entries(process.env)) {
+      if (v !== undefined) {
+        (instance as any)[Config.camelize(k, '_')] = v
+      }
+    }
+
+    for (let key in (overrides || {})) {
+      (instance as any)[key] = (overrides as any)[key]
+    }
+
+    return instance
+  }
+
+  public natsClientPrefix: string = process.env.NATS_CLIENT_PREFIX || 'ts-natsutil'
+  public natsClusterId?: string = process.env.NATS_CLUSTER_ID
+  public natsDeadLetterSubject: string = process.env.NATS_DEADLETTER_SUBJECT || 'nats.deadletter'
+  public natsEncoding: BufferEncoding = (process.env.NATS_BUFFER_ENCODING || 'utf-8') as BufferEncoding
+  public natsJson: boolean | true = process.env.NATS_JSON === 'true'
+  public natsMaxPingOut: number = process.env.NATS_MAX_UNACKED_PINGS ? parseInt(process.env.NATS_MAX_UNACKED_PINGS) : 2
+  public natsNoEcho: boolean | false = process.env.NATS_NO_ECHO === 'true'
+  public natsPedantic: boolean | false = process.env.NATS_PEDANTIC === 'true'
+  public natsPingInterval: number = process.env.NATS_PING_INTERVAL ? parseInt(process.env.NATS_PING_INTERVAL) : 120000
+  public natsServers?: string = process.env.NATS_SERVERS
+  public natsTlsConfigured: boolean = !!process.env.NATS_TLS_KEY && !!process.env.NATS_TLS_CERTIFICATE && !!process.env.NATS_CA_CERTIFICATE
+  public natsTlsOptions?: TlsOptions = this.natsTlsConfigured ? {
+    // key: fs.readFileSync(process.env.NATS_TLS_KEY),
+    // cert: fs.readFileSync(process.env.NATS_TLS_CERTIFICATE),
+    // ca: [ fs.readFileSync(process.env.NATS_CA_CERTIFICATE) ],
+    rejectUnauthorized: !(process.env.NATS_FORCE_TLS === 'true'),
+  } as TlsOptions : undefined
+  public natsToken?: string = process.env.NATS_TOKEN
+  public natsVerbose: boolean | false = process.env.NATS_VERBOSE === 'true'
+}
 
 class NatsUtil {
 
@@ -105,13 +148,13 @@ class NatsUtil {
     }
   }
 
-  async attemptNack(conn: stan.Stan, msg: NATSMessage, timeout: number) {
+  async attemptNack(conn: stan.Stan, msg: stan.Message, timeout: number) {
     if (this.shouldDeadletter(msg, timeout)) {
       this.nack(conn, msg)
     }
   }
 
-  async nack(conn: stan.Stan, msg: NATSMessage) {
+  async nack(conn: stan.Stan, msg: stan.Message) {
     try {
       conn.publish(this.config.natsDeadLetterSubject, msg.getRawData())
     } catch (err) {
@@ -119,7 +162,7 @@ class NatsUtil {
     }
   }
   
-  shouldDeadletter(msg: NATSMessage, deadletterTimeout: number): boolean {
+  shouldDeadletter(msg: stan.Message, deadletterTimeout: number): boolean {
     return msg.isRedelivered() && ((new Date().getTime()) / 1000) - (msg.getTimestamp().getTime() / 1000) >= deadletterTimeout
   }
 }
