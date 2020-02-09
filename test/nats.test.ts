@@ -1,7 +1,7 @@
 import * as jwt from 'jsonwebtoken';
 const generateRSAKeypair = require('generate-rsa-keypair')
 
-import NatsUtil from "./nats";
+import NatsUtil from "../src/nats";
 
 const natsServers = ['nats://localhost:4220']
 
@@ -44,7 +44,7 @@ nXX9rQKhK/v6/jeelKquH8zy894hLZe7feSsWV9GMgb5l9p+UzWB
 // FwIDAQAB
 // -----END PUBLIC KEY-----
 
-const vendJWT = (ttl: number, permissions: any, privateKey?: string): string => {
+const vendJWT = (ttl: number, permissions: any, privateKey?: string): string | undefined | null => {
   try {
     return jwt.sign({
       nats: {

@@ -1,73 +1,23 @@
-import * as natsws from '@provide/nats.ws' // FIXME
+import * as natsws from '@provide/nats.ws'
 import * as nats from 'ts-nats'
 import * as stan from 'node-nats-streaming'
-import { TlsOptions } from 'tls'
+import { Config } from './env'
 
 const uuidv4 = require('uuid/v4')
-
-class Config {
-
-  static camelize(str: string, sep: string): string {
-    const split = str.split(sep)
-
-    return split.reduce((acc: string, curr: string, i) => {
-      if (i === 0) {
-        return curr.toLowerCase()
-      }
-
-      return (acc + curr.charAt(0).toUpperCase() + curr.slice(1).toLowerCase())
-    }, '')
-  }
-
-  static fromEnv(overrides?: Partial<Config>): Config {
-    const instance = new Config();
-    for (const [k, v] of Object.entries(process.env)) {
-      if (v !== undefined) {
-        (instance as any)[Config.camelize(k, '_')] = v
-      }
-    }
-
-    for (let key in (overrides || {})) {
-      (instance as any)[key] = (overrides as any)[key]
-    }
-
-    return instance
-  }
-
-  public natsClientPrefix: string = process.env.NATS_CLIENT_PREFIX || 'ts-natsutil'
-  public natsClusterId?: string = process.env.NATS_CLUSTER_ID
-  public natsDeadLetterSubject: string = process.env.NATS_DEADLETTER_SUBJECT || 'nats.deadletter'
-  public natsEncoding: BufferEncoding = (process.env.NATS_BUFFER_ENCODING || 'utf-8') as BufferEncoding
-  public natsJson: boolean | true = process.env.NATS_JSON === 'true'
-  public natsMaxPingOut: number = process.env.NATS_MAX_UNACKED_PINGS ? parseInt(process.env.NATS_MAX_UNACKED_PINGS) : 2
-  public natsNoEcho: boolean | false = process.env.NATS_NO_ECHO === 'true'
-  public natsPedantic: boolean | false = process.env.NATS_PEDANTIC === 'true'
-  public natsPingInterval: number = process.env.NATS_PING_INTERVAL ? parseInt(process.env.NATS_PING_INTERVAL) : 120000
-  public natsServers?: string = process.env.NATS_SERVERS
-  public natsTlsConfigured: boolean = !!process.env.NATS_TLS_KEY && !!process.env.NATS_TLS_CERTIFICATE && !!process.env.NATS_CA_CERTIFICATE
-  public natsTlsOptions?: TlsOptions = this.natsTlsConfigured ? {
-    // key: fs.readFileSync(process.env.NATS_TLS_KEY),
-    // cert: fs.readFileSync(process.env.NATS_TLS_CERTIFICATE),
-    // ca: [ fs.readFileSync(process.env.NATS_CA_CERTIFICATE) ],
-    rejectUnauthorized: !(process.env.NATS_FORCE_TLS === 'true'),
-  } as TlsOptions : undefined
-  public natsToken?: string = process.env.NATS_TOKEN
-  public natsVerbose: boolean | false = process.env.NATS_VERBOSE === 'true'
-}
 
 class NatsUtil {
 
   private config: Config
-  private clusterId: string
+  private clusterId: string | undefined | null
   private servers: string[]
-  private token?: string
-  private bearerToken?: string
+  private token?: string | undefined | null
+  private bearerToken: string | undefined | null
 
-  constructor(clusterId: string, servers?: string[], bearerToken?: string, token?: string) {
+  constructor(clusterId: string | undefined | null, servers?: string[], bearerToken?: string | undefined | null, token?: string | undefined | null) {
     this.bearerToken = bearerToken
     this.config = Config.fromEnv()
     this.clusterId = clusterId ? clusterId : this.config.natsClusterId
-    this.servers = servers ? servers : this.config.natsServers.split(',')
+    this.servers = servers ? servers : (this.config.natsServers || '').split(',')
     this.token = token ? token : this.config.natsToken
   }
 
@@ -92,19 +42,10 @@ class NatsUtil {
     }
   }
 
-  getNatsStreamingClientOpts(natsConnectionOpts: nats.NatsConnectionOptions, natsClient: nats.Client): stan.ClientOpts {
-    const opts = natsConnectionOpts as stan.StanOptions;
-    return {
-      // url?: string,
-      // connectTimeout?: number,
-      // ackTimeout?: number,
-      // discoverPrefix?: string,
-      // maxPubAcksInflight?: number,
-      // stanEncoding?: string,
-      // stanMaxPingOut?: number,
-      // stanPingInterval: number,
-      nc: natsClient,
-    } as stan.ClientOpts
+  getNatsStreamingClientOpts(natsConnectionOpts: any, natsClient: nats.Client): stan.ClientOpts {
+    const opts = natsConnectionOpts
+    opts.nc = natsClient
+    return opts as stan.ClientOpts
   }
 
   async getNatsConnection(opts?: nats.NatsConnectionOptions): Promise<nats.Client> {
@@ -135,15 +76,14 @@ class NatsUtil {
 
   async getNatsStreamingConnection(): Promise<stan.Stan> {
     let clientId: string
-    // const clientId = `${this.config.natsClientPrefix}-${uuidv4()}-${this.clusterId}-${uuidv4()}`
     try {
       const natsConnectionOpts = this.getNatsConnectionOpts()
       const natsClient = await this.getNatsConnection()
       const opts = this.getNatsStreamingClientOpts(natsConnectionOpts, natsClient)
-      clientId = opts.name
-      return stan.connect(this.clusterId, clientId, opts)
+      clientId = opts.name!
+      return stan.connect(this.clusterId || '', clientId, opts)
     } catch (err) {
-      console.log(`Error establishing NATS streaming connection: ${clientId}; ${err}"`)
+      console.log(`Error establishing NATS streaming connection; ${err}"`)
       return Promise.reject(err)
     }
   }
