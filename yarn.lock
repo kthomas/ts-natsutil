@@ -305,10 +305,10 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
-"@provide/nats.ws@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@provide/nats.ws/-/nats.ws-0.0.2.tgz#e876cfda1232577ccec859ade50bb747f17a5fc5"
-  integrity sha512-UUznrgtXNOn95ULCC3xrcDOcpkFO/Vt6GwrLwnXuqzuMHMzSu0jYZYfOyjHHYcU/d2ksHycCg+QtyirfY4GjBA==
+"@provide/nats.ws@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@provide/nats.ws/-/nats.ws-0.0.3.tgz#14e40b9a279d15fcfaf5455cb2f491ea159773cd"
+  integrity sha512-pSzYWS9xrGOcs2JrpK6ijEHlyVqb8or740N2tpwKla9bRU66n8K+eZHq4qF5vW2FsOWE1om9LKEZVG7xLfTZ2A==
   dependencies:
     js-nuid "^1.1.1-4"
 
