@@ -7,10 +7,10 @@ export class Config {
   public natsDeadLetterSubject: string = process.env.NATS_DEADLETTER_SUBJECT || 'nats.deadletter';
   public natsEncoding: BufferEncoding = (process.env.NATS_BUFFER_ENCODING || 'utf-8') as BufferEncoding;
   public natsJson: boolean | true = process.env.NATS_JSON === 'true';
-  public natsMaxPingOut: number = process.env.NATS_MAX_UNACKED_PINGS ? parseInt(process.env.NATS_MAX_UNACKED_PINGS) : 2;
+  public natsMaxPingOut: number = process.env.NATS_MAX_UNACKED_PINGS ? parseInt(process.env.NATS_MAX_UNACKED_PINGS) : 3;
   public natsNoEcho: boolean | false = process.env.NATS_NO_ECHO === 'true';
   public natsPedantic: boolean | false = process.env.NATS_PEDANTIC === 'true';
-  public natsPingInterval: number = process.env.NATS_PING_INTERVAL ? parseInt(process.env.NATS_PING_INTERVAL) : 120000;
+  public natsPingInterval: number = process.env.NATS_PING_INTERVAL ? parseInt(process.env.NATS_PING_INTERVAL) : 30;
   public natsServers?: string = process.env.NATS_SERVERS;
   public natsTlsConfigured: boolean = !!process.env.NATS_TLS_KEY && !!process.env.NATS_TLS_CERTIFICATE && !!process.env.NATS_CA_CERTIFICATE;
   public natsTlsOptions?: TlsOptions = this.natsTlsConfigured ? {
