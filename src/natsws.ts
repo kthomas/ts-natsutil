@@ -1,10 +1,9 @@
-import * as nats from 'ts-nats'
-import * as stan from 'node-nats-streaming'
+import * as natsws from '@provide/nats.ws'
 import { Config } from './env'
 
 const uuidv4 = require('uuid/v4')
 
-class NatsUtil {
+class NatsWebsocketUtil {
 
   private config: Config
   private clusterId: string | undefined | null
@@ -41,46 +40,26 @@ class NatsUtil {
     }
   }
 
-  getNatsStreamingClientOpts(natsConnectionOpts: any, natsClient: nats.Client): stan.ClientOpts {
-    const opts = natsConnectionOpts
-    opts.nc = natsClient
-    return opts as stan.ClientOpts
-  }
-
-  async getNatsConnection(opts?: nats.NatsConnectionOptions): Promise<nats.Client> {
+  async getNatsWebsocketConnection(opts?: natsws.NatsConnectionOptions): Promise<natsws.NatsConnection> {
     const clientId = opts ? opts.name : `${this.config.natsClientPrefix}-${uuidv4()}`
     try {
       if (!opts) {
-        opts = this.getNatsConnectionOpts(clientId) as nats.NatsConnectionOptions
+        opts = this.getNatsConnectionOpts(clientId) as natsws.NatsConnectionOptions
       }
-      return nats.connect(opts)
+      return natsws.connect(opts)
     } catch (err) {
       console.log(`Error establishing NATS connection: ${clientId}; ${err}"`)
       return Promise.reject(err)
     }
   }
 
-  async getNatsStreamingConnection(): Promise<stan.Stan> {
-    let clientId: string
-    try {
-      const natsConnectionOpts = this.getNatsConnectionOpts()
-      const natsClient = await this.getNatsConnection()
-      const opts = this.getNatsStreamingClientOpts(natsConnectionOpts, natsClient)
-      clientId = opts.name!
-      return stan.connect(this.clusterId || '', clientId, opts)
-    } catch (err) {
-      console.log(`Error establishing NATS streaming connection; ${err}"`)
-      return Promise.reject(err)
-    }
-  }
-
-  async attemptNack(conn: stan.Stan, msg: stan.Message, timeout: number) {
+  async attemptNack(conn: natsws.NatsConnection, msg: natsws.Message, timeout: number) {
     if (this.shouldDeadletter(msg, timeout)) {
       this.nack(conn, msg)
     }
   }
 
-  async nack(conn: stan.Stan, msg: stan.Message) {
+  async nack(conn: natsws.NatsConnection, msg: natsws.Message) {
     try {
       conn.publish(this.config.natsDeadLetterSubject, msg.getRawData())
     } catch (err) {
@@ -88,9 +67,9 @@ class NatsUtil {
     }
   }
   
-  shouldDeadletter(msg: stan.Message, deadletterTimeout: number): boolean {
+  shouldDeadletter(msg: natsws.Message, deadletterTimeout: number): boolean {
     return msg.isRedelivered() && ((new Date().getTime()) / 1000) - (msg.getTimestamp().getTime() / 1000) >= deadletterTimeout
   }
 }
 
-export default NatsUtil
+export default NatsWebsocketUtil
