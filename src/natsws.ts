@@ -6,15 +6,13 @@ const uuidv4 = require('uuid/v4')
 class NatsWebsocketUtil {
 
   private config: Config
-  private clusterId: string | undefined | null
   private servers: string[]
   private token?: string | undefined | null
   private bearerToken: string | undefined | null
 
-  constructor(clusterId: string | undefined | null, servers?: string[], bearerToken?: string | undefined | null, token?: string | undefined | null) {
+  constructor(servers?: string[], bearerToken?: string | undefined | null, token?: string | undefined | null) {
     this.bearerToken = bearerToken
     this.config = Config.fromEnv()
-    this.clusterId = clusterId ? clusterId : this.config.natsClusterId
     this.servers = servers ? servers : (this.config.natsServers || '').split(',')
     this.token = token ? token : this.config.natsToken
   }
