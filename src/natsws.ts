@@ -1,4 +1,4 @@
-import { nats as natsws } from '@provide/nats.ws';
+import * as natsws from '@provide/nats.ws';
 import { Config } from './env';
 
 const uuidv4 = require('uuid/v4');
