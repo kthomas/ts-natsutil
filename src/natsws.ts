@@ -1,20 +1,20 @@
-import { natsws  as natsws } from '@provide/nats.ws'
-import { Config } from './env'
+import { nats as natsws } from '@provide/nats.ws';
+import { Config } from './env';
 
-const uuidv4 = require('uuid/v4')
+const uuidv4 = require('uuid/v4');
 
-class NatsWebsocketUtil {
+export class NatsWebsocketUtil {
 
-  private config: Config
-  private servers: string[]
-  private token?: string | undefined | null
-  private bearerToken: string | undefined | null
+  private config: Config;
+  private servers: string[];
+  private token?: string | undefined | null;
+  private bearerToken: string | undefined | null;
 
   constructor(servers?: string[], bearerToken?: string | undefined | null, token?: string | undefined | null) {
-    this.bearerToken = bearerToken
-    this.config = Config.fromEnv()
-    this.servers = servers ? servers : (this.config.natsServers || '').split(',')
-    this.token = token ? token : this.config.natsToken
+    this.bearerToken = bearerToken;
+    this.config = Config.fromEnv();
+    this.servers = servers ? servers : (this.config.natsServers || '').split(',');
+    this.token = token ? token : this.config.natsToken;
   }
 
   getNatsConnectionOpts(clientId?: string): any {
@@ -29,45 +29,43 @@ class NatsWebsocketUtil {
       noRandomize: false,
       pingInterval: this.config.natsPingInterval,
       servers: this.servers,
-      token: this.token, 
+      token: this.token,
       tls: this.config.natsTlsOptions,
       userJWT: this.bearerToken,
       pedantic: this.config.natsPedantic,
       verbose: this.config.natsVerbose,
       url: this.servers[0],
-    }
+    };
   }
 
   async getNatsWebsocketConnection(opts?: natsws.NatsConnectionOptions): Promise<natsws.NatsConnection> {
-    const clientId = opts ? opts.name : `${this.config.natsClientPrefix}-${uuidv4()}`
+    const clientId = opts ? opts.name : `${this.config.natsClientPrefix}-${uuidv4()}`;
     try {
       if (!opts) {
-        opts = this.getNatsConnectionOpts(clientId) as natsws.NatsConnectionOptions
+        opts = this.getNatsConnectionOpts(clientId) as natsws.NatsConnectionOptions;
       }
-      return natsws.connect(opts)
+      return natsws.connect(opts);
     } catch (err) {
-      console.log(`Error establishing NATS connection: ${clientId}; ${err}"`)
-      return Promise.reject(err)
+      console.log(`Error establishing NATS connection: ${clientId}; ${err}"`);
+      return Promise.reject(err);
     }
   }
 
   async attemptNack(conn: natsws.NatsConnection, msg: natsws.Message, timeout: number) {
     if (this.shouldDeadletter(msg, timeout)) {
-      this.nack(conn, msg)
+      this.nack(conn, msg);
     }
   }
 
   async nack(conn: natsws.NatsConnection, msg: natsws.Message) {
     try {
-      conn.publish(this.config.natsDeadLetterSubject, msg.getRawData())
+      conn.publish(this.config.natsDeadLetterSubject, msg.getRawData());
     } catch (err) {
-      console.log(`Error Nacking NATS message on subject: ${msg.getSubject}; ${err}"`)
+      console.log(`Error Nacking NATS message on subject: ${msg.getSubject}; ${err}"`);
     }
   }
-  
+
   shouldDeadletter(msg: natsws.Message, deadletterTimeout: number): boolean {
-    return msg.isRedelivered() && ((new Date().getTime()) / 1000) - (msg.getTimestamp().getTime() / 1000) >= deadletterTimeout
+    return msg.isRedelivered() && ((new Date().getTime()) / 1000) - (msg.getTimestamp().getTime() / 1000) >= deadletterTimeout;
   }
 }
-
-export default NatsWebsocketUtil
