@@ -81,6 +81,10 @@ export class NatsWebsocketService implements INatsService {
     });
   }
 
+  getSubscribedSubjects(): string[] {
+    return Object.keys(this.subscriptions);
+  }
+
   isConnected(): boolean {
     return this.connection ? !this.connection.isClosed() : false;
   }

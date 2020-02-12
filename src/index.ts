@@ -15,6 +15,7 @@ export const natsPayloadTypeBinary = 'binary';
 export interface INatsService {
   connect(): Promise<any>;
   disconnect(): Promise<void>;
+  getSubscribedSubjects(): string[];
   isConnected(): boolean;
   publish(subject: string, payload: any, reply?: string): Promise<void>;
   publishCount(): number;
