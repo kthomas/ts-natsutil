@@ -1,4 +1,4 @@
-import * as natsws from '@provide/nats.ws';
+import { nats as natsws } from '@provide/nats.ws';
 import { Config } from './env';
 import { INatsService, INatsSubscription, natsPayloadTypeBinary, natsPayloadTypeJson } from '.';
 
