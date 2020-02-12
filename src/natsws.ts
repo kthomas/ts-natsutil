@@ -1,6 +1,6 @@
 import * as natsws from '@provide/nats.ws';
 import { Config } from './env';
-import { INatsService, INatsSubscription } from '.';
+import { INatsService, INatsSubscription, natsPayloadTypeBinary, natsPayloadTypeJson } from '.';
 
 const uuidv4 = require('uuid/v4');
 
@@ -8,7 +8,7 @@ export class NatsWebsocketService implements INatsService {
 
   private bearerToken: string | undefined | null;
   private config: Config;
-  private connection?: natsws.Client | null;
+  private connection?: natsws.NatsConnection | null;
   private pubCount = 0;
   private servers: string[];
   private subscriptions: { [key: string]: INatsSubscription } = {};
@@ -34,23 +34,16 @@ export class NatsWebsocketService implements INatsService {
     return new Promise((resolve, reject) => {
       const clientId = `${this.config.natsClientPrefix}-${uuidv4()}`;
       natsws.connect({
-        encoding: this.config.natsEncoding,
-        json: this.config.natsJson,
+        // connectTimeout: 1000,
         name: clientId,
-        reconnect: true,
-        maxPingOut: this.config.natsMaxPingOut,
-        maxReconnectAttempts: -1,
         noEcho: this.config.natsNoEcho,
-        noRandomize: false,
-        pingInterval: this.config.natsPingInterval,
-        servers: this.servers,
-        token: this.token,
-        tls: this.config.natsTlsOptions,
-        userJWT: this.bearerToken,
+        payload: this.config.natsJson ? natsPayloadTypeJson : natsPayloadTypeBinary,
         pedantic: this.config.natsPedantic,
-        verbose: this.config.natsVerbose,
+        token: this.token,
         url: this.servers[0],
-      } as natsws.NatsConnectionOptions).then((nc) => {
+        userJWT: this.bearerToken,
+        verbose: this.config.natsVerbose,
+      }).then((nc) => {
         this.connection = nc;
 
         nc.addEventListener('close', () => {
@@ -75,19 +68,30 @@ export class NatsWebsocketService implements INatsService {
 
   async disconnect(): Promise<void> {
     this.assertConnected();
-    this.connection?.drain();
-    this.connection?.close();
-    this.connection = null;
+    return new Promise((resolve, reject) => {
+      this.flush().then(() => {
+        this.connection.drain();
+        this.connection.close();
+        this.connection = null;
+        resolve();
+      }).catch((err) => {
+        console.log(`NATS flush failed; ${err}`);
+        reject(err);
+      });
+    });
   }
 
   isConnected(): boolean {
     return this.connection ? !this.connection.isClosed() : false;
   }
 
-  async publish(subject: string, payload: any, reply?: string | undefined): Promise<void> {
+  async publish(subject: string, payload: any, reply?: string): Promise<void> {
     this.assertConnected();
-    this.connection?.publish(subject, payload, reply);
-    this.pubCount++;
+    return new Promise((resolve) => {
+      this.connection.publish(subject, payload, reply);
+      this.pubCount++;
+      resolve();
+    });
   }
 
   publishCount(): number {
@@ -97,7 +101,7 @@ export class NatsWebsocketService implements INatsService {
   async request(subject: string, timeout: number, data?: any): Promise<any> {
     this.assertConnected();
     return new Promise((resolve, reject) => {
-      this.connection?.request(subject, timeout, data).then((msg) => {
+      this.connection.request(subject, timeout, data).then((msg) => {
         resolve(msg);
       }).catch((err) => {
         console.log(`NATS request failed; ${err}`);
@@ -109,7 +113,7 @@ export class NatsWebsocketService implements INatsService {
   async subscribe(subject: string, callback: (msg: any, err?: any) => void): Promise<INatsSubscription> {
     this.assertConnected();
     return new Promise((resolve, reject) => {
-      this.connection?.subscribe(subject, callback).then((sub: INatsSubscription) => {
+      this.connection.subscribe(subject, callback).then((sub: INatsSubscription) => {
         this.subscriptions[subject] = sub;
         resolve(sub);
       }).catch((err) => {
@@ -134,7 +138,7 @@ export class NatsWebsocketService implements INatsService {
 
   async flush(): Promise<void> {
     this.assertConnected();
-    return this.connection?.flush();
+    return this.connection.flush();
   }
 
   private assertConnected(): void {

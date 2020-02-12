@@ -1,24 +1,23 @@
 import * as nats from 'ts-nats';
-// import * as stan from 'node-nats-streaming';
 import { Config } from './env';
-import { INatsService, INatsSubscription } from '.';
+import { INatsService, INatsSubscription, natsPayloadTypeBinary, natsPayloadTypeJson } from '.';
 
 const uuidv4 = require('uuid/v4');
 
 export class NatsService implements INatsService {
 
-  private bearerToken: string | undefined | null;
+  private bearerToken: string | undefined;
   private config: Config;
   private connection?: nats.Client | null;
   private pubCount = 0;
   private servers: string[];
   private subscriptions: { [key: string]: INatsSubscription } = {};
-  private token?: string | undefined | null;
+  private token?: string | undefined;
 
   constructor(
     servers?: string[],
-    bearerToken?: string | undefined | null,
-    token?: string | undefined | null,
+    bearerToken?: string | undefined,
+    token?: string | undefined,
   ) {
     this.bearerToken = bearerToken;
     this.config = Config.fromEnv();
@@ -37,7 +36,7 @@ export class NatsService implements INatsService {
       const clientId = `${this.config.natsClientPrefix}-${uuidv4()}`;
       nats.connect({
         encoding: this.config.natsEncoding,
-        json: this.config.natsJson,
+        payload: this.config.natsJson ? nats.Payload[natsPayloadTypeJson] : nats.Payload[natsPayloadTypeBinary],
         name: clientId,
         reconnect: true,
         maxPingOut: this.config.natsMaxPingOut,
@@ -52,7 +51,7 @@ export class NatsService implements INatsService {
         pedantic: this.config.natsPedantic,
         verbose: this.config.natsVerbose,
         url: this.servers[0],
-      } as nats.NatsConnectionOptions).then((nc) => {
+      }).then((nc) => {
         this.connection = nc;
 
         nc.on('close', () => {
@@ -77,20 +76,30 @@ export class NatsService implements INatsService {
 
   async disconnect(): Promise<void> {
     this.assertConnected();
-    this.connection?.drain();
-    this.connection?.close();
-    this.connection = null;
+    return new Promise((resolve, reject) => {
+      this.flush().then(() => {
+        this.connection?.drain();
+        this.connection?.close();
+        this.connection = null;
+        resolve();
+      }).catch((err) => {
+        console.log(`NATS flush failed; ${err}`);
+        reject(err);
+      });
+    });
   }
 
   isConnected(): boolean {
     return this.connection ? !this.connection.isClosed() : false;
   }
 
-  async publish(subject: string, payload: any, reply?: string | undefined): Promise<void> {
+  async publish(subject: string, payload: any, reply?: string): Promise<void> {
     this.assertConnected();
-    this.connection?.publish(subject, payload, reply);
-    this.pubCount++;
-    return Promise.resolve();
+    return new Promise((resolve) => {
+      this.connection?.publish(subject, payload, reply);
+      this.pubCount++;
+      resolve();
+    });
   }
 
   publishCount(): number {

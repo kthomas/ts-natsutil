@@ -6,8 +6,11 @@ export * from './env';
 export * from './nats';
 export * from './natsws';
 
-const messagingServiceTypeNats = 'nats';
-const messagingServiceTypeWebsocket = 'ws';
+const natsServiceTypeNats = 'nats';
+const natsServiceTypeWebsocket = 'ws';
+
+export const natsPayloadTypeJson = 'json';
+export const natsPayloadTypeBinary = 'binary';
 
 export interface INatsService {
   connect(): Promise<any>;
@@ -41,19 +44,19 @@ export function natsServiceFactory(config: any): INatsService {
 
   if (typeof natsServers === 'string') {
     if (natsServers.startsWith('nats://')) {
-      serviceType = messagingServiceTypeNats;
+      serviceType = natsServiceTypeNats;
     } else if (natsServers.startsWith('ws://') || natsServers.startsWith('wss://')) {
-      serviceType = messagingServiceTypeWebsocket;
+      serviceType = natsServiceTypeWebsocket;
     }
   } else if (natsServers.length > 0 && natsServers[0] && natsServers[0].startsWith('nats://')) {
-    serviceType = messagingServiceTypeNats;
+    serviceType = natsServiceTypeNats;
   } else if (natsServers.length > 0 && natsServers[0] && natsServers[0].startsWith('ws://') || natsServers[0].startsWith('wss://')) {
-    serviceType = messagingServiceTypeWebsocket;
+    serviceType = natsServiceTypeWebsocket;
   }
 
-  if (serviceType === messagingServiceTypeNats) {
+  if (serviceType === natsServiceTypeNats) {
     return new NatsService(natsServers, bearerToken, token);
-  } else if (serviceType === messagingServiceTypeWebsocket) {
+  } else if (serviceType === natsServiceTypeWebsocket) {
     return new NatsWebsocketService(natsServers, bearerToken, token);
   }
 
