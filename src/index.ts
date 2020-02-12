@@ -16,7 +16,7 @@ export interface INatsService {
   publish(subject: string, payload: any, reply?: string): Promise<void>;
   publishCount(): number;
   request(subject: string, timeout: number, data?: any): Promise<any | void>;
-  subscribe(subject: string, callback: (msg: any) => void): Promise<INatsSubscription>;
+  subscribe(subject: string, callback: (msg: any, err?: any) => void): Promise<INatsSubscription>;
   unsubscribe(subject: string);
   flush(): Promise<void>;
 }

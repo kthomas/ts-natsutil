@@ -106,7 +106,7 @@ export class NatsWebsocketService implements INatsService {
     });
   }
 
-  async subscribe(subject: string, callback: (msg: any) => void): Promise<INatsSubscription> {
+  async subscribe(subject: string, callback: (msg: any, err?: any) => void): Promise<INatsSubscription> {
     this.assertConnected();
     return new Promise((resolve, reject) => {
       this.connection?.subscribe(subject, callback).then((sub: INatsSubscription) => {
@@ -114,6 +114,7 @@ export class NatsWebsocketService implements INatsService {
         resolve(sub);
       }).catch((err) => {
         console.log(`NATS subscription failed; ${err}`);
+        callback(undefined, err);
         reject(err);
       });
     });

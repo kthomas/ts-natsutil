@@ -109,10 +109,10 @@ export class NatsService implements INatsService {
     });
   }
 
-  async subscribe(subject: string, callback: (err: any, msg: any) => void): Promise<INatsSubscription> {
+  async subscribe(subject: string, callback: (msg: any, err?: any) => void): Promise<INatsSubscription> {
     this.assertConnected();
     return new Promise((resolve, reject) => {
-      this.connection?.subscribe(subject, callback).then((sub: INatsSubscription) => {
+      this.connection?.subscribe(subject, (err, msg) => { callback(msg, err); }).then((sub: INatsSubscription) => {
         this.subscriptions[subject] = sub;
         resolve(sub);
       }).catch((err) => {
