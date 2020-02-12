@@ -84,7 +84,7 @@ export class NatsWebsocketService implements INatsService {
   }
 
   isConnected(): boolean {
-    return this.connection ? this.connection?.isClosed() : false;
+    return this.connection ? this.connection.isClosed() : false;
   }
 
   async publish(subject: string, payload: any, reply?: string | undefined): Promise<void> {

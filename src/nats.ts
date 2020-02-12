@@ -86,13 +86,14 @@ export class NatsService implements INatsService {
   }
 
   isConnected(): boolean {
-    return this.connection ? this.connection?.isClosed() : false;
+    return this.connection ? this.connection.isClosed() : false;
   }
 
   async publish(subject: string, payload: any, reply?: string | undefined): Promise<void> {
     this.assertConnected();
     this.connection?.publish(subject, payload, reply);
     this.pubCount++;
+    return Promise.resolve();
   }
 
   publishCount(): number {
