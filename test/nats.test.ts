@@ -1,9 +1,9 @@
 import * as jwt from 'jsonwebtoken';
-const generateRSAKeypair = require('generate-rsa-keypair')
+const generateRSAKeypair = require('generate-rsa-keypair');
 
-import { NatsUtil } from "../src/nats";
+import { NatsService } from '../src/nats';
 
-const natsServers = ['nats://localhost:4220']
+const natsServers = ['nats://localhost:4222'];
 
 const validSigningKey = `-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAqU/GXp8MqmugQyRk5FUFBvlJt1/h7L3Crzlzejz/OxriZdq/
@@ -31,7 +31,7 @@ tQ0zSEm/Xq1DLTrUo8U9qmJCK0gA10SZwe9dGctlF36k8DJMpWjd2QYkO2GVthBl
 d4wV3wKBgC7S4q0wmcrQIjyDIFmISQNdOAJhR0pJXG8mK2jECbEXxbKkAJnLj73D
 J+1OVBlx4HXx54PiEkV3M3iTinf5tBSi8nA2D3s829F65XKFli1RC4rJv+2ygH8P
 nXX9rQKhK/v6/jeelKquH8zy894hLZe7feSsWV9GMgb5l9p+UzWB
------END RSA PRIVATE KEY-----`
+-----END RSA PRIVATE KEY-----`;
 
 // Use the following public key for verification:
 // -----BEGIN PUBLIC KEY-----
@@ -56,37 +56,40 @@ const vendJWT = (ttl: number, permissions: any, privateKey?: string): string | u
       subject: '0x',
       issuer: 'ts-natsutil',
       expiresIn: ttl,
-    } as jwt.SignOptions)
+    } as jwt.SignOptions);
   } catch (e) {
-    console.log(e)
+    console.log(e);
   }
-  return null
-}
+  return null;
+};
 
 const vendRSAKeypair = (): any => {
-  return generateRSAKeypair()
-}
+  return generateRSAKeypair();
+};
 
 test('when the bearer token is not present', async () => {
-  let client = new NatsUtil(null, natsServers)
-  const conn = await client.getNatsConnection()
-  expect(conn.isClosed()).toBeTruthy()
-})
+  const service = new NatsService(natsServers);
+  await service.connect();
+  expect(service.isConnected()).toBeFalsy();
+});
 
 test('when the bearer token is present but signed by the wrong authority', async () => {
-  let signer = vendRSAKeypair()
-  let token = vendJWT(10, [], signer.private)
-  let client = new NatsUtil(null, natsServers, token)
-  const conn = await client.getNatsConnection()
-  expect(conn.publish('test', 'msg123')).toBeFalsy()
-})
+  const signer = vendRSAKeypair();
+  const token = vendJWT(10, [], signer.private);
+  const service = new NatsService(natsServers, token);
+  await service.connect();
+  expect(service.isConnected()).toBeFalsy();
+});
 
 test('when the bearer token is present and signed by the appropriate authority', async () => {
-  let token = vendJWT(10, {publish: {'allow': ['auth.>']}, subscribe: {}, responses: {}}, validSigningKey)
-  let client = new NatsUtil(null, natsServers, token)
-  const conn = await client.getNatsConnection()
-  expect(conn.publish('test', 'msg123')).toBeTruthy()
-})
+  const token = vendJWT(10, {publish: {'allow': ['auth.>']}, subscribe: {}, responses: {}}, validSigningKey);
+  const service = new NatsService(natsServers, token);
+  await service.connect();
+  expect(service.isConnected()).toBeTruthy();
+  expect(service.publishCount()).toEqual(0);
+  await service.publish('test', 'msg123');
+  expect(service.publishCount()).toEqual(1);
+});
 
 // test('when the bearer token authorizes a specific response permission', async () => {
 //   const conn = await client.getNatsConnection()

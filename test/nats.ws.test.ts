@@ -1,9 +1,9 @@
 import * as jwt from 'jsonwebtoken';
-const generateRSAKeypair = require('generate-rsa-keypair')
+const generateRSAKeypair = require('generate-rsa-keypair');
 
-import { NatsWebsocketUtil } from "../src/natsws";
+import { NatsWebsocketService } from '../src/natsws';
 
-const natsServers = ['ws://localhost:4219']
+const natsServers = ['wss://localhost:4221'];
 
 const validSigningKey = `-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAqU/GXp8MqmugQyRk5FUFBvlJt1/h7L3Crzlzejz/OxriZdq/
@@ -60,33 +60,33 @@ const vendJWT = (ttl: number, permissions: any, privateKey?: string): string | u
   } catch (e) {
     console.log(e)
   }
-  return null
-}
+  return null;
+};
 
 const vendRSAKeypair = (): any => {
-  return generateRSAKeypair()
-}
+  return generateRSAKeypair();
+};
 
 test('when the bearer token is not present', async () => {
-  let client = new NatsWebsocketUtil(natsServers)
-  const conn = await client.getNatsWebsocketConnection()
-  expect(conn.isClosed()).toBeTruthy()
-})
+  const service = new NatsWebsocketService(natsServers);
+  await service.connect();
+  expect(service.isConnected()).toBeFalsy();
+});
 
 test('when the bearer token is present but signed by the wrong authority', async () => {
-  let signer = vendRSAKeypair()
-  let token = vendJWT(10, [], signer.private)
-  let client = new NatsWebsocketUtil(natsServers, token)
-  const conn = await client.getNatsWebsocketConnection()
-  expect(conn.isClosed()).toBeTruthy()
-})
+  const signer = vendRSAKeypair();
+  const token = vendJWT(10, [], signer.private);
+  const service = new NatsWebsocketService(natsServers, token);
+  await service.connect();
+  expect(service.isConnected()).toBeFalsy();
+});
 
 test('when the bearer token is present and signed by the appropriate authority', async () => {
-  let token = vendJWT(10, {publish: {'allow': ['auth.>']}, subscribe: {}, responses: {}}, validSigningKey)
-  let client = new NatsWebsocketUtil(natsServers, token)
-  const conn = await client.getNatsWebsocketConnection()
-  expect(conn.isClosed()).toBeFalsy()
-})
+  const token = vendJWT(10, {publish: {'allow': ['auth.>']}, subscribe: {}, responses: {}}, validSigningKey);
+  const service = new NatsWebsocketService(natsServers, token);
+  await service.connect();
+  expect(service.isConnected()).toBeTruthy();
+});
 
 // test('when the bearer token authorizes a specific response permission', async () => {
 //   const conn = await client.getNatsConnection()
