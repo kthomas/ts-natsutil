@@ -1,7 +1,7 @@
 import * as nats from 'ts-nats';
 // import * as stan from 'node-nats-streaming';
 import { Config } from './env';
-import { INatsService } from '.';
+import { INatsService, INatsSubscription } from '.';
 
 const uuidv4 = require('uuid/v4');
 
@@ -12,7 +12,7 @@ export class NatsService implements INatsService {
   private connection?: nats.Client | null;
   private pubCount = 0;
   private servers: string[];
-  private subscriptions: { [key: string]: any } = {};
+  private subscriptions: { [key: string]: INatsSubscription } = {};
   private token?: string | undefined | null;
 
   constructor(
@@ -33,8 +33,8 @@ export class NatsService implements INatsService {
       return Promise.resolve(this.connection);
     }
 
-    const clientId = `${this.config.natsClientPrefix}-${uuidv4()}`;
-    try {
+    return new Promise((resolve, reject) => {
+      const clientId = `${this.config.natsClientPrefix}-${uuidv4()}`;
       nats.connect({
         encoding: this.config.natsEncoding,
         json: this.config.natsJson,
@@ -67,15 +67,12 @@ export class NatsService implements INatsService {
           }
         });
 
-        return Promise.resolve(nc);
+        resolve(nc);
       }).catch((err) => {
         console.log(`Error establishing NATS connection: ${clientId}; ${err}"`);
-        return Promise.reject(err);
+        reject(err);
       });
-    } catch (err) {
-      console.log(`Error establishing NATS connection: ${clientId}; ${err}"`);
-      return Promise.reject(err);
-    }
+    });
   }
 
   async disconnect(): Promise<void> {
@@ -102,22 +99,26 @@ export class NatsService implements INatsService {
 
   async request(subject: string, timeout: number, data?: any): Promise<any> {
     this.assertConnected();
-    await this.connection?.request(subject, timeout, data).then((msg) => {
-      return Promise.resolve(msg);
-    }).catch((err) => {
-      console.log(`NATS request failed; ${err}`);
-      return Promise.reject(err);
+    return new Promise((resolve, reject) => {
+      this.connection?.request(subject, timeout, data).then((msg) => {
+        resolve(msg);
+      }).catch((err) => {
+        console.log(`NATS request failed; ${err}`);
+        reject(err);
+      });
     });
   }
 
-  async subscribe(subject: string, callback: (err: any, msg: any) => void): Promise<any> {
+  async subscribe(subject: string, callback: (err: any, msg: any) => void): Promise<INatsSubscription> {
     this.assertConnected();
-    await this.connection?.subscribe(subject, callback).then((sub) => {
-      this.subscriptions[subject] = sub;
-      return Promise.resolve(sub);
-    }).catch((err) => {
-      console.log(`NATS subscription failed; ${err}`);
-      return Promise.reject(err);
+    return new Promise((resolve, reject) => {
+      this.connection?.subscribe(subject, callback).then((sub: INatsSubscription) => {
+        this.subscriptions[subject] = sub;
+        resolve(sub);
+      }).catch((err) => {
+        console.log(`NATS subscription failed; ${err}`);
+        reject(err);
+      });
     });
   }
 

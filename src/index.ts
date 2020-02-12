@@ -16,7 +16,7 @@ export interface INatsService {
   publish(subject: string, payload: any, reply?: string): Promise<void>;
   publishCount(): number;
   request(subject: string, timeout: number, data?: any): Promise<any | void>;
-  subscribe(subject: string, callback: (msg: any) => void): Promise<any | void>;
+  subscribe(subject: string, callback: (msg: any) => void): Promise<INatsSubscription>;
   unsubscribe(subject: string);
   flush(): Promise<void>;
 }
@@ -25,6 +25,10 @@ export interface INatsStreamingService {
   attemptNack(conn: any, msg: any, timeout: number);
   nack(conn: any, msg: any);
   shouldDeadletter(msg: any, deadletterTimeout: number): boolean;
+}
+
+export interface INatsSubscription {
+  unsubscribe();
 }
 
 export function natsServiceFactory(config: any): INatsService {
