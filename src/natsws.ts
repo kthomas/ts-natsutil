@@ -53,12 +53,12 @@ export class NatsWebsocketService implements INatsService {
       } as natsws.NatsConnectionOptions).then((nc) => {
         this.connection = nc;
 
-        nc.on('close', () => {
+        nc.addEventListener('close', () => {
           console.log('Connection closed');
           this.connection = null;
         });
 
-        nc.on('error', () => {
+        nc.addEventListener('error', () => {
           if (nc.isClosed()) {
             console.log('Connection closed');
             this.connection = null;
