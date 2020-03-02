@@ -12,7 +12,7 @@
       "dom",
       "esnext.asynciterable"
     ],
-    "module": "esnext",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "noImplicitAny": false,
     "noImplicitReturns": true,
