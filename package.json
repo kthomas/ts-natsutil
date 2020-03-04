@@ -1,9 +1,9 @@
 {
   "name": "ts-natsutil",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "Opinionated NATS and NATS streaming utility to simplify NATS application development",
   "license": "MIT",
-  "main": "./dist/index.js",
+  "main": "./dist/natsutil.js",
   "module": "./dist/index.esm.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -11,10 +11,11 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && yarn run package",
     "clean": "rm -rf ./dist",
     "compile": "tsc",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "package": "webpack-cli --display-modules"
   },
   "author": "Kyle Thomas <kyle@provide.services>",
   "dependencies": {
@@ -37,7 +38,8 @@
     "tslint-config-prettier": "1.18.0",
     "tslint-plugin-prettier": "2.0.1",
     "typescript": "^3.5.2",
-    "webpack": "^4.26.0",
-    "webpack-cli": "^3.1.2"
+    "webpack": "^4.42.0",
+    "webpack-cli": "^3.1.2",
+    "webpack-node-externals": "^1.7.2"
   }
 }
