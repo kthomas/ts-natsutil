@@ -16,6 +16,7 @@ module.exports = {
         filename: 'dist/natsutil.js',
         libraryTarget: 'umd',
         library: 'natsutil',
+        globalObject: 'this'
     },
     resolve: {
         extensions: ['.js', '.ts'],
