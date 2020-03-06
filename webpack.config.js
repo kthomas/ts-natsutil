@@ -14,7 +14,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname),
         filename: 'dist/natsutil.js',
-        libraryTarget: 'commonjs',
+        libraryTarget: 'umd',
         library: 'natsutil',
     },
     resolve: {
