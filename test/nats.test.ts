@@ -91,6 +91,18 @@ test('when the bearer token is present and signed by the appropriate authority',
   expect(service.publishCount()).toEqual(1);
 });
 
+test('when the bearer token requests a subscription', async () => {
+  const token = vendJWT(10, {publish: {'allow': ['auth.>']}, subscribe: {'allow': ['auth.>']}, responses: {}}, validSigningKey);
+  const service = new NatsService(natsServers, token);
+  await service.connect();
+  expect(service.isConnected()).toBeTruthy();
+  expect(service.publishCount()).toEqual(0);
+  await service.subscribe('auth.test.subject', (msg) => {
+    console.log(`WOOT ${msg}`);
+  });
+  expect(service.publishCount()).toEqual(1);
+});
+
 // test('when the bearer token authorizes a specific response permission', async () => {
 //   const conn = await client.getNatsConnection()
 //   console.log(conn)

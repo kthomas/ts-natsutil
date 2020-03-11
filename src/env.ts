@@ -10,7 +10,7 @@ export class Config {
   public natsMaxPingOut: number = process.env.NATS_MAX_UNACKED_PINGS ? parseInt(process.env.NATS_MAX_UNACKED_PINGS, 10) : 3;
   public natsNoEcho: boolean | false = process.env.NATS_NO_ECHO === 'true';
   public natsPedantic: boolean | false = process.env.NATS_PEDANTIC === 'true';
-  public natsPingInterval: number = process.env.NATS_PING_INTERVAL ? parseInt(process.env.NATS_PING_INTERVAL, 10) : 30;
+  public natsPingInterval: number = (process.env.NATS_PING_INTERVAL ? parseInt(process.env.NATS_PING_INTERVAL, 10) : 30) * 1000;
   public natsServers?: string = process.env.NATS_SERVERS;
   public natsTlsConfigured: boolean = !!process.env.NATS_TLS_KEY && !!process.env.NATS_TLS_CERTIFICATE && !!process.env.NATS_CA_CERTIFICATE;
   public natsTlsOptions?: TlsOptions = this.natsTlsConfigured ? {
