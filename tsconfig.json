@@ -20,7 +20,7 @@
     "noLib": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "outDir": "./dist",
+    "outDir": "./dist/cjs",
     "removeComments": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
