@@ -20,6 +20,7 @@
     "noLib": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "outDir": "./dist",
     "removeComments": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
