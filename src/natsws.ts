@@ -1,4 +1,4 @@
-import { nats as natsws } from '@provide/nats.ws';
+import * as natsws from '@provide/nats.ws';
 import { Config } from './env';
 import { INatsService, INatsSubscription, natsPayloadTypeBinary, natsPayloadTypeJson } from '.';
 
@@ -8,7 +8,7 @@ export class NatsWebsocketService implements INatsService {
 
   private bearerToken: string | undefined | null;
   private config: Config;
-  private connection?: natsws.NatsConnection | null;
+  private connection?: natsws.Connection | null;
   private pubCount = 0;
   private servers: string[];
   private subscriptions: { [key: string]: INatsSubscription } = {};
@@ -37,11 +37,10 @@ export class NatsWebsocketService implements INatsService {
         // connectTimeout: 1000,
         name: clientId,
         noEcho: this.config.natsNoEcho,
-        payload: this.config.natsJson ? natsPayloadTypeJson : natsPayloadTypeBinary,
         pedantic: this.config.natsPedantic,
-        token: this.token,
+        token: this.token || undefined,
         url: this.servers[0],
-        userJWT: this.bearerToken,
+        userJWT: this.bearerToken || undefined,
         verbose: this.config.natsVerbose,
       }).then((nc) => {
         this.connection = nc;
@@ -70,8 +69,8 @@ export class NatsWebsocketService implements INatsService {
     this.assertConnected();
     return new Promise((resolve, reject) => {
       this.flush().then(() => {
-        this.connection.drain();
-        this.connection.close();
+        this.connection?.drain();
+        this.connection?.close();
         this.connection = null;
         resolve();
       }).catch((err) => {
@@ -92,7 +91,7 @@ export class NatsWebsocketService implements INatsService {
   async publish(subject: string, payload: any, reply?: string): Promise<void> {
     this.assertConnected();
     return new Promise((resolve) => {
-      this.connection.publish(subject, payload, reply);
+      this.connection?.publish(subject, payload, reply);
       this.pubCount++;
       resolve();
     });
@@ -105,7 +104,7 @@ export class NatsWebsocketService implements INatsService {
   async request(subject: string, timeout: number, data?: any): Promise<any> {
     this.assertConnected();
     return new Promise((resolve, reject) => {
-      this.connection.request(subject, timeout, data).then((msg) => {
+      this.connection?.request(subject, timeout, data).then((msg) => {
         resolve(msg);
       }).catch((err) => {
         console.log(`NATS request failed; ${err}`);
@@ -117,7 +116,7 @@ export class NatsWebsocketService implements INatsService {
   async subscribe(subject: string, callback: (msg: any, err?: any) => void): Promise<INatsSubscription> {
     this.assertConnected();
     return new Promise((resolve, reject) => {
-      this.connection.subscribe(subject, callback).then((sub: INatsSubscription) => {
+      this.connection?.subscribe(subject, callback).then((sub: INatsSubscription) => {
         this.subscriptions[subject] = sub;
         resolve(sub);
       }).catch((err) => {
@@ -142,7 +141,7 @@ export class NatsWebsocketService implements INatsService {
 
   async flush(): Promise<void> {
     this.assertConnected();
-    return this.connection.flush();
+    return this.connection?.flush();
   }
 
   private assertConnected(): void {
