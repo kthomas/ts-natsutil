@@ -1,5 +1,6 @@
 const path = require('path')
 const nodeExternals = require('webpack-node-externals');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'production',
@@ -28,5 +29,11 @@ module.exports = {
         exclude:  /(node_modules|test)/,
       },
     ],
-  }
+  },
+  plugins: [
+    new webpack.DefinePlugin({
+      pkg: require('./package.json'),
+      window: {},
+    }),
+  ]
 };
