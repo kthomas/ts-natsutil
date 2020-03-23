@@ -1,6 +1,6 @@
 {
   "name": "ts-natsutil",
-  "version": "1.0.0",
+  "version": "0.1.22",
   "description": "Opinionated NATS and NATS streaming utility to simplify NATS application development",
   "license": "MIT",
   "main": "./dist/cjs/index.js",
