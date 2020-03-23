@@ -1,6 +1,5 @@
 const path = require('path')
 const nodeExternals = require('webpack-node-externals');
-const webpack = require('webpack');
 
 module.exports = {
     mode: 'production',
@@ -13,7 +12,8 @@ module.exports = {
       ],
     output: {
         path: path.resolve(__dirname),
-        filename: 'dist/natsutil.js',
+	path: path.resolve(__dirname, 'dist', 'umd'),
+	filename: 'index.js',
         libraryTarget: 'umd',
         library: 'natsutil',
         globalObject: 'this'
@@ -29,12 +29,5 @@ module.exports = {
                 exclude:  /(node_modules|test)/,
             },
         ],
-    },
-    plugins: [
-        new webpack.DefinePlugin({
-            pkg: require('./package.json'),
-            window: {},
-        }),
-    ],
-    devtool: 'source-map',
+    }
 };
