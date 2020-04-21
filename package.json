@@ -1,6 +1,6 @@
 {
   "name": "ts-natsutil",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Opinionated NATS and NATS streaming utility to simplify NATS application development",
   "license": "MIT",
   "main": "./dist/cjs/index.js",
@@ -18,9 +18,8 @@
   },
   "author": "Kyle Thomas <kyle@provide.services>",
   "dependencies": {
-    "@provide/nats.ws": "1.0.5",
+    "@provide/nats.ws": "^1.0.6",
     "jsonwebtoken": "8.5.1",
-    "nats.ws": "^1.0.0-16",
     "node-nats-streaming": "0.2.6",
     "ts-nats": "1.2.14-2",
     "uuid": "3.4.0"
