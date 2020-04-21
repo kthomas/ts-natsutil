@@ -20,6 +20,7 @@
   "dependencies": {
     "@provide/nats.ws": "1.0.5",
     "jsonwebtoken": "8.5.1",
+    "nats.ws": "^1.0.0-16",
     "node-nats-streaming": "0.2.6",
     "ts-nats": "1.2.14-2",
     "uuid": "3.4.0"
