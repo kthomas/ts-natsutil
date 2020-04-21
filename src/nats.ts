@@ -1,4 +1,4 @@
-import * as nats from 'ts-nats';
+import { connect, Payload, Client } from 'ts-nats';
 import { Config } from './env';
 import { INatsService, INatsSubscription, natsPayloadTypeBinary, natsPayloadTypeJson } from '.';
 
@@ -8,7 +8,7 @@ export class NatsService implements INatsService {
 
   private bearerToken: string | undefined;
   private config: Config;
-  private connection?: nats.Client | null;
+  private connection?: Client | null;
   private pubCount = 0;
   private servers: string[];
   private subscriptions: { [key: string]: INatsSubscription } = {};
@@ -34,9 +34,9 @@ export class NatsService implements INatsService {
 
     return new Promise((resolve, reject) => {
       const clientId = `${this.config.natsClientPrefix}-${uuidv4()}`;
-      nats.connect({
+      connect({
         encoding: this.config.natsEncoding,
-        payload: this.config.natsJson ? nats.Payload[natsPayloadTypeJson] : nats.Payload[natsPayloadTypeBinary],
+        payload: this.config.natsJson ? Payload[natsPayloadTypeJson] : Payload[natsPayloadTypeBinary],
         name: clientId,
         reconnect: true,
         maxPingOut: this.config.natsMaxPingOut,
