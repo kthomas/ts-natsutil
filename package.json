@@ -18,11 +18,11 @@
   },
   "author": "Kyle Thomas <kyle@provide.services>",
   "dependencies": {
-    "@provide/nats.ws": "^1.0.5",
-    "jsonwebtoken": "^8.5.1",
-    "node-nats-streaming": "^0.2.6",
-    "ts-nats": "^1.2.4",
-    "uuid": "^3.3.2"
+    "@provide/nats.ws": "1.0.5",
+    "jsonwebtoken": "8.5.1",
+    "node-nats-streaming": "0.2.6",
+    "ts-nats": "1.2.14-2",
+    "uuid": "3.4.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.18",
