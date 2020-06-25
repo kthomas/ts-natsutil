@@ -41,9 +41,9 @@ export class Config {
       }
     }
 
-    for (const key in (overrides || {})) {
+    Object.keys(overrides || {}).forEach((key) => {
       (instance as any)[key] = (overrides as any)[key];
-    }
+    });
 
     return instance;
   }

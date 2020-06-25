@@ -1,4 +1,5 @@
 import * as natsws from '@provide/nats.ws';
+import { Logger } from 'winston';
 import { Config } from './env';
 import { INatsService, INatsSubscription, natsPayloadTypeBinary, natsPayloadTypeJson } from '.';
 
@@ -9,25 +10,28 @@ export class NatsWebsocketService implements INatsService {
   private bearerToken: string | undefined | null;
   private config: Config;
   private connection?: natsws.Connection | null;
+  private log: Logger;
   private pubCount = 0;
   private servers: string[];
   private subscriptions: { [key: string]: INatsSubscription } = {};
   private token?: string | undefined | null;
 
   constructor(
+    log: Logger,
     servers?: string[],
     bearerToken?: string | undefined | null,
     token?: string | undefined | null
   ) {
     this.bearerToken = bearerToken;
     this.config = Config.fromEnv();
+    this.log = log;
     this.servers = servers ? servers : (this.config.natsServers || '').split(',');
     this.token = token ? token : this.config.natsToken;
   }
 
   async connect(): Promise<any> {
     if (this.connection && !this.connection.isClosed()) {
-      console.log('Attempted to establish NATS connection short-circuirted; connection is already open');
+      this.log.debug('Attempted to establish NATS connection short-circuirted; connection is already open');
       return Promise.resolve(this.connection);
     }
 
@@ -46,20 +50,20 @@ export class NatsWebsocketService implements INatsService {
         this.connection = nc;
 
         nc.addEventListener('close', () => {
-          console.log('Connection closed');
+          this.log.debug('Connection closed');
           this.connection = null;
         });
 
         nc.addEventListener('error', () => {
           if (nc.isClosed()) {
-            console.log('Connection closed');
+            this.log.debug('Connection closed');
             this.connection = null;
           }
         });
 
         resolve(nc);
       }).catch((err) => {
-        console.log(`Error establishing NATS connection: ${clientId}; ${err}"`);
+        this.log.debug(`Error establishing NATS connection: ${clientId}; ${err}"`);
         reject(err);
       });
     });
@@ -74,7 +78,7 @@ export class NatsWebsocketService implements INatsService {
         this.connection = null;
         resolve();
       }).catch((err) => {
-        console.log(`NATS flush failed; ${err}`);
+        this.log.debug(`NATS flush failed; ${err}`);
         reject(err);
       });
     });
@@ -107,7 +111,7 @@ export class NatsWebsocketService implements INatsService {
       this.connection?.request(subject, timeout, data).then((msg) => {
         resolve(msg);
       }).catch((err) => {
-        console.log(`NATS request failed; ${err}`);
+        this.log.debug(`NATS request failed; ${err}`);
         reject(err);
       });
     });
@@ -120,7 +124,7 @@ export class NatsWebsocketService implements INatsService {
         this.subscriptions[subject] = sub;
         resolve(sub);
       }).catch((err) => {
-        console.log(`NATS subscription failed; ${err}`);
+        this.log.debug(`NATS subscription failed; ${err}`);
         callback(undefined, err);
         reject(err);
       });
@@ -131,7 +135,7 @@ export class NatsWebsocketService implements INatsService {
     this.assertConnected();
     const sub = this.subscriptions[subject];
     if (!sub) {
-      console.log(`Unable to unsubscribe from subject: ${subject}; subscription not found`);
+      this.log.debug(`Unable to unsubscribe from subject: ${subject}; subscription not found`);
       return;
     }
 

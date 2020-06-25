@@ -1,3 +1,4 @@
+import { Logger, createLogger, format, transports } from 'winston';
 import { NatsService } from './nats';
 import { NatsWebsocketService } from './natsws';
 
@@ -51,10 +52,28 @@ export function natsServiceFactory(config: any): INatsService {
   }
 
   if (serviceType === natsServiceTypeNats) {
-    return new NatsService(natsServers, bearerToken, token);
+    return new NatsService(
+      loggerFactory(),
+      natsServers,
+      bearerToken,
+      token,
+    );
   } else if (serviceType === natsServiceTypeWebsocket) {
-    return new NatsWebsocketService(natsServers, bearerToken, token);
+    return new NatsWebsocketService(
+      loggerFactory(),
+      natsServers,
+      bearerToken,
+      token,
+    );
   }
 
   throw new Error('Invalid NATS config; unable to resolve protocol; check config');
+}
+
+function loggerFactory(): Logger {
+  return createLogger({
+    level: process.env.LOG_LEVEL || 'debug',
+    format: format.combine(format.colorize(), format.simple()),
+    transports: [new transports.Console()],
+  });
 }
