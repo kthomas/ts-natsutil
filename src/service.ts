@@ -1,4 +1,3 @@
-import { Logger, createLogger, format, transports } from 'winston';
 import { NatsService } from './nats';
 import { NatsWebsocketService } from './natsws';
 
@@ -7,6 +6,13 @@ const natsServiceTypeWebsocket = 'ws';
 
 export const natsPayloadTypeJson = 'json';
 export const natsPayloadTypeBinary = 'binary';
+
+export interface ILogger {
+  debug(msg: string): void;
+  info(msg: string): void;
+  warn(msg: string): void;
+  error(msg: string): void;
+}
 
 export interface INatsService {
   connect(): Promise<any>;
@@ -31,7 +37,7 @@ export interface INatsSubscription {
   unsubscribe();
 }
 
-export function natsServiceFactory(config: any): INatsService {
+export function natsServiceFactory(config: any, log?: ILogger): INatsService {
   const { natsServers, bearerToken, token } = config;
   if (!natsServers) {
     throw new Error('No NATS servers or websocket endpoints provided; check config');
@@ -53,14 +59,14 @@ export function natsServiceFactory(config: any): INatsService {
 
   if (serviceType === natsServiceTypeNats) {
     return new NatsService(
-      loggerFactory(),
+      log,
       natsServers,
       bearerToken,
       token,
     );
   } else if (serviceType === natsServiceTypeWebsocket) {
     return new NatsWebsocketService(
-      loggerFactory(),
+      log,
       natsServers,
       bearerToken,
       token,
@@ -68,12 +74,4 @@ export function natsServiceFactory(config: any): INatsService {
   }
 
   throw new Error('Invalid NATS config; unable to resolve protocol; check config');
-}
-
-function loggerFactory(): Logger {
-  return createLogger({
-    level: process.env.LOG_LEVEL || 'debug',
-    format: format.combine(format.colorize(), format.simple()),
-    transports: [new transports.Console()],
-  });
 }

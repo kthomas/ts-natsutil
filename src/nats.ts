@@ -1,7 +1,6 @@
 import { connect, Payload, Client } from 'ts-nats';
-import { Logger } from 'winston';
 import { Config } from './env';
-import { INatsService, INatsSubscription, natsPayloadTypeBinary, natsPayloadTypeJson } from '.';
+import { ILogger, INatsService, INatsSubscription, natsPayloadTypeBinary, natsPayloadTypeJson } from '.';
 
 const uuidv4 = require('uuid/v4');
 
@@ -10,14 +9,14 @@ export class NatsService implements INatsService {
   private bearerToken: string | undefined;
   private config: Config;
   private connection?: Client | null;
-  private log: Logger;
+  private log?: ILogger;
   private pubCount = 0;
   private servers: string[];
   private subscriptions: { [key: string]: INatsSubscription } = {};
   private token?: string | undefined;
 
   constructor(
-    log: Logger,
+    log?: ILogger,
     servers?: string[],
     bearerToken?: string | undefined,
     token?: string | undefined,
@@ -32,7 +31,7 @@ export class NatsService implements INatsService {
 
   async connect(): Promise<any> {
     if (this.connection && !this.connection.isClosed()) {
-      this.log.debug('Attempted to establish NATS connection short-circuirted; connection is already open');
+      this.log?.debug('Attempted to establish NATS connection short-circuirted; connection is already open');
       return Promise.resolve(this.connection);
     }
 
@@ -59,20 +58,20 @@ export class NatsService implements INatsService {
         this.connection = nc;
 
         nc.on('close', () => {
-          this.log.debug('Connection closed');
+          this.log?.debug('Connection closed');
           this.connection = null;
         });
 
         nc.on('error', () => {
           if (nc.isClosed()) {
-            this.log.debug('Connection closed');
+            this.log?.debug('Connection closed');
             this.connection = null;
           }
         });
 
         resolve(nc);
       }).catch((err) => {
-        this.log.debug(`Error establishing NATS connection: ${clientId}; ${err}"`);
+        this.log?.debug(`Error establishing NATS connection: ${clientId}; ${err}"`);
         reject(err);
       });
     });
@@ -87,7 +86,7 @@ export class NatsService implements INatsService {
         this.connection = null;
         resolve();
       }).catch((err) => {
-        this.log.debug(`NATS flush failed; ${err}`);
+        this.log?.debug(`NATS flush failed; ${err}`);
         reject(err);
       });
     });
@@ -120,7 +119,7 @@ export class NatsService implements INatsService {
       this.connection?.request(subject, timeout, data).then((msg) => {
         resolve(msg);
       }).catch((err) => {
-        this.log.debug(`NATS request failed; ${err}`);
+        this.log?.debug(`NATS request failed; ${err}`);
         reject(err);
       });
     });
@@ -133,7 +132,7 @@ export class NatsService implements INatsService {
         this.subscriptions[subject] = sub;
         resolve(sub);
       }).catch((err) => {
-        this.log.debug(`NATS subscription failed; ${err}`);
+        this.log?.debug(`NATS subscription failed; ${err}`);
         reject(err);
       });
     });
@@ -143,7 +142,7 @@ export class NatsService implements INatsService {
     this.assertConnected();
     const sub = this.subscriptions[subject];
     if (!sub) {
-      this.log.debug(`Unable to unsubscribe from subject: ${subject}; subscription not found`);
+      this.log?.debug(`Unable to unsubscribe from subject: ${subject}; subscription not found`);
       return;
     }
 
