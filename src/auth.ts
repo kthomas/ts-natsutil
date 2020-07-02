@@ -1,5 +1,5 @@
 import * as jwt from 'jsonwebtoken';
-import { Logger } from 'winston';
+import { ILogger } from '.';
 
 const defaultIssuer = 'ts-natsutil'; // FIXME
 const defaultSigningAlgorithm = 'RS256';
@@ -8,13 +8,13 @@ export class AuthService {
 
   private audience: string;
 
-  private log: Logger;
+  private log?: ILogger;
 
   private privateKey: string;
   private publicKey: string;
 
   constructor(
-    log: Logger,
+    log: ILogger,
     audience: string,
     privateKey: string,
     publicKey: string,
@@ -48,10 +48,10 @@ export class AuthService {
 
       try {
         const token = jwt.sign(claims, signer, options);
-        this.log.debug(`Signed ${token.length}-byte bearer authorization token for subject: ${subject}`);
+        this.log?.debug(`Signed ${token.length}-byte bearer authorization token for subject: ${subject}`);
         resolve(token);
       } catch (err) {
-        this.log.debug(`Failed to vend NATS bearer JWT for subject: ${subject}; ${err}`);
+        this.log?.debug(`Failed to vend NATS bearer JWT for subject: ${subject}; ${err}`);
         reject(err);
       }
     });
@@ -61,7 +61,7 @@ export class AuthService {
     let verified = false;
     jwt.verify(token, this.publicKey, { algorithms: [defaultSigningAlgorithm] }, (err) => {
       if (err) {
-        this.log.debug(`NATS bearer JWT verification failed; ${err}`);
+        this.log?.debug(`NATS bearer JWT verification failed; ${err}`);
         verified = false;
       }
     });
